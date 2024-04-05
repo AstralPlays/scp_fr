@@ -1,8 +1,16 @@
 scp_fr = scp_fr or {}
 
+if not GAS or not GAS.JobWhitelist then print('SCP_FR: This server does not have BWhitelist installed. SCP_FR Has not been initiated.') return end
+
 util.AddNetworkString('SCP_FR:Message')
-util.AddNetworkString('SCP_FR:Job')
 util.AddNetworkString('SCP_FR:Timer')
+
+function scp_fr.net_SendRequest(ply, job)
+    net.Start('SCP_FR:Message')
+        net.WriteString('Request')
+        net.WriteInt(job, 32)
+    net.Send(ply)
+end
 
 function scp_fr.net_SendMaintainment(ply, job)
     net.Start('SCP_FR:Message')
@@ -44,5 +52,23 @@ net.Receive('SCP_FR:Timer', function(len, ply)
         scp_fr.StartTimer(ply)
     elseif (method == 'TimerStop') then
         scp_fr.StopTimer(ply)
+    end
+end)
+
+net.Receive('SCP_FR:Message', function(len, ply)
+    local method = net.ReadString()
+    if (method == 'RespondRequest') then
+        local job = net.ReadInt(32)
+        local response = net.ReadBool()
+        if not scp_fr.RequestSCPTables[job][ply] then return end
+        if response then
+            local jobCommand = RPExtraTeams[jobid].command
+            ply:Say('/'.. jobCommand)
+        else
+            scp_fr.NextRequest(ply, job)
+        end
+    elseif (method == 'RequestSCP') then
+        local job = net.ReadInt(32)
+        scp_fr.RequestSCP(ply, job)
     end
 end)

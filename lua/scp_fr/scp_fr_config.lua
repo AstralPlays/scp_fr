@@ -1,5 +1,11 @@
 scp_fr = scp_fr or {}
 
+local RequestSCPConfig = {
+    ['Cooldown'] = 1200, -- 10 min
+    [TEAM_RESEARCHER] = true, -- etc etc
+}
+
+scp_fr.RequestSCPConfig = RequestSCPConfig
 local config = {
     [TEAM_SCP049] = {
         ['Job'] = TEAM_SCP049,
@@ -22,14 +28,13 @@ local config = {
     }
 }
 
-for Job, config in pairs(config) do
+for job, config in pairs(config) do
     if (config['Custom']) then
         scp_fr.CustomConfig[job] = config
-    end    
+    end
 end
 
 scp_fr.Config = config
 
 function WendigoCheck(config)
-
 end

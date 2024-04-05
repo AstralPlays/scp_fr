@@ -1,6 +1,8 @@
 scp_fr = scp_fr or {}
 scp_fr.Timers = scp_fr.Timers or {}
 
+if not GAS or not GAS.JobWhitelist then print('SCP_FR: This server does not have BWhitelist installed. SCP_FR Has not been initiated.') return end
+
 function scp_fr.StartTimer(ply)
     if not scp_fr.Timers[ply] then return end
     scp_fr.Timers[ply]['Timer'] = scp_fr.Config[scp_fr.Timers[ply]['Job'].id]['Timer']
@@ -28,6 +30,7 @@ function scp_fr.PauzeTimer(ply)
 end
 
 function scp_fr.AddSCP(ply, job)
+    if not GAS.JobWhitelist:IsWhitelisted(ply, job) then continue end
     scp_fr.Timers[ply] = scp_fr.Config[job]
     ply:SetNWInt('SCP_FR:Timer', scp_fr.Timers[ply]['Timer'])
 end
@@ -64,9 +67,46 @@ function scp_fr.AskMaintainment(ply)
     end)
 end
 
+scp_fr.RequestSCPTables = {}
+function scp_fr.RequestSCP(ply, job) -- Start asking players with the whitelist to flag on.
+    if(scp_fr.RequestSCPTables[job]) then return end
+    if not (scp_fr.RequestSCPConfig[ply:Team()]) then return end
+    if ply.scp_fr.RequestTimer and (ply.scp_fr.RequestTimer > CurTime()) then return end
+    for player, config in pairs(scp_fr.Timers) do
+        if (config['Job'].id == job) then return end
+    end
+    ply.scp_fr.RequestTimer = CurTime() + scp_fr.RequestSCPConfig['Cooldown']
+    scp_fr.RequestSCPTables[job] = {}
+    local whitelistedPlayers = {}
+    for _, ply in ipairs(player.GetAll()) do
+        if not GAS.JobWhitelist:IsWhitelisted(ply, job) then continue end
+        table.insert(whitelistedPlayers, ply)
+    end
+    if table.count(whitelistedPlayers) then return end
+    scp_fr.RequestSCPTables[job] = whitelistedPlayers
+    local firstplayer = table.Random(scp_fr.RequestSCPTables[job])
+    scp_fr.RequestSCPTables[job]['CurPlayer'] = firstplayer
+    scp_fr.net_SendRequest(ply, job, true)
+    timer.Create("SCP_FR:RequestTimer-".. job, 300, 1, function() scp_fr.NextRequest(ply, job) end)
+end
+
+function scp_fr.NextRequest(ply, job) -- Ask next player to hop on
+    table.RemoveByValue(scp_fr.RequestSCPTables[job], ply)
+    if table.Count(scp_fr.RequestSCPTables[job]) == 0 then return end
+    local nextplayer = table.Random(scp_fr.RequestSCPTables[job])
+    scp_fr.RequestSCPTables[job]['CurPlayer'] = nextplayer
+    scp_fr.net_SendRequest(nextplayer, job, true)
+    if(timer.Exists("SCP_FR:RequestTimer-".. job)) then timer.Remove("SCP_FR:RequestTimer-".. job) end
+end
+
+function scp_fr.StopRequest(job) -- Somebody hopped on the job.
+    scp_fr.RequestSCPTables[job] = {}
+    scp_fr.net_SendRequest(scp_fr.RequestSCPTables[job]['CurPlayer'], job, true)
+end
+
 timer.Create('SCP_FR:Loop', 1, 0, function()
     for team, config in pairs(scp_fr.CustomConfig) do
-        scp_fr.CustomConfig['Custom'](config)
+        scp_fr.CustomConfig['Custom'](config) -- Run custom function
     end
     
     for player, variables in pairs(scp_fr.Timers) do
@@ -94,6 +134,7 @@ hook.Add('PlayerChangeJob', 'SCP_FR:Jobs', function(ply, oldTeam, newTeam)
 end)
 
 hook.Add('PlayerDisconnected', 'SCP_FR:Jobs', function(ply)
+    if(timer.Exists("SCP_FR:RequestTimer-".. ply:Team())) then scp_fr.NextRequest(ply:Team(), job) end
     if(scp_fr.Timers[ply]) then
         scp_fr.RemoveSCP(ply)
     end
