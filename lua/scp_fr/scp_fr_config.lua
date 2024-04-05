@@ -12,7 +12,7 @@ local config = {
     },
     [TEAM_WENDIGO] = {
         ['Job'] = TEAM_SCP049,
-        ['Custom'] = WendigoCheck(),
+        ['Custom'] = WendigoCheck,
         ['BreachPos'] = Vector(0, 0, 0),
         ['Silent'] = true,
         ['Timer'] = (20 * 60),
@@ -22,8 +22,14 @@ local config = {
     }
 }
 
+for Job, config in pairs(config) do
+    if (config['Custom']) then
+        scp_fr.CustomConfig[job] = config
+    end    
+end
+
 scp_fr.Config = config
 
-function WendigoCheck()
+function WendigoCheck(config)
 
 end

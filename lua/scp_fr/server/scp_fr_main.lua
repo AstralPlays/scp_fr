@@ -65,6 +65,10 @@ function scp_fr.AskMaintainment(ply)
 end
 
 timer.Create('SCP_FR:Loop', 1, 0, function()
+    for team, config in pairs(scp_fr.CustomConfig) do
+        scp_fr.CustomConfig['Custom'](config)
+    end
+    
     for player, variables in pairs(scp_fr.Timers) do
         if (variables['Timer'] <= 0) then return end
         scp_fr.Timers[player]['Timer'] = (scp_fr.Timers[player]['Timer'] - 1)
