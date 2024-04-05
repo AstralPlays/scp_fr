@@ -1,6 +1,3 @@
-include("lua/scp_fr/scp_fr_config.lua")
-AddCSLuaFile("lua/scp_fr/scp_fr_config.lua")
-
 local function IncludeFile(path, isServer)
     if isServer and SERVER then
         print(path)
@@ -12,17 +9,24 @@ local function IncludeFile(path, isServer)
 end
 
 local function LoadServerFiles()
-    local files, _ = file.Find("lua/scp_fr/server/*.lua", "GAME")
+    local files, _ = file.Find('lua/scp_fr/server/*.lua', 'GAME')
     for _, file in ipairs(files) do
-        IncludeFile("d_rep/server/" .. file, true)
+        IncludeFile('d_rep/server/' .. file, true)
     end
 end
 
 local function LoadClientFiles()
-    local files, _ = file.Find("lua/scp_fr/client/*.lua", "GAME")
+    local files, _ = file.Find('lua/scp_fr/client/*.lua', 'GAME')
     for _, file in ipairs(files) do
-        IncludeFile("d_rep/client/" .. file, false)
+        IncludeFile('d_rep/client/' .. file, false)
     end
 end
-LoadServerFiles()
-LoadClientFiles()
+
+hook.Add('DarkRPFinishedLoading', 'SCP_FR:LoadConfig', function()
+    include('lua/scp_fr/scp_fr_config.lua')
+    AddCSLuaFile('lua/scp_fr/scp_fr_config.lua')
+    LoadServerFiles()
+    LoadClientFiles()
+    print('SCP_FR: DarkRP has finished loading.')
+    hook.Remove('DarkRPFinishedLoading', 'SCP_FR:LoadConfig')
+end)

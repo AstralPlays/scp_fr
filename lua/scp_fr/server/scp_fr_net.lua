@@ -1,21 +1,28 @@
 scp_fr = scp_fr or {}
 
-util.AddNetworkString("SCP_FR:Message")
-util.AddNetworkString("SCP_FR:Job")
-util.AddNetworkString("SCP_FR:Timer")
+util.AddNetworkString('SCP_FR:Message')
+util.AddNetworkString('SCP_FR:Job')
+util.AddNetworkString('SCP_FR:Timer')
+
+function scp_fr.net_SendMaintainment(ply, job)
+    net.Start('SCP_FR:Message')
+        net.WriteString('Message')
+        net.WriteInt(job, 32)
+    net.Send(ply)
+end
 
 function scp_fr.net_SendAdvert(message)
-    net.Start("SCP_FR:Message")
-        net.WriteString("Advert")
+    net.Start('SCP_FR:Message')
+        net.WriteString('Advert')
         net.WriteString(message)
-    net.SendToServer()
+    net.Broadcast()
 end
 
 function scp_fr.net_SendBreach(jobName)
-    net.Start("SCP_FR:Message")
-        net.WriteString("Breach")
+    net.Start('SCP_FR:Message')
+        net.WriteString('Breach')
         net.WriteString(jobName)
-    net.SendToServer()
+    net.Broadcast()
 end
 
 local function checkJob(ply, job)
@@ -28,7 +35,7 @@ local function checkJob(ply, job)
     scp_fr.AddSCP(ply, job)
 end
 
-net.Receive("SCP_FR:Timer", function(len, ply)
+net.Receive('SCP_FR:Timer', function(len, ply)
     local method = net.ReadString()
     if (method == 'Job') then
         local job = net.ReadInt(32)
